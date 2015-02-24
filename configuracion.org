@@ -1,0 +1,193 @@
+#+TITLE: Tests
+#+AUTHOR: @ADNvox
+#+EMAIL: bourbonv7@hotmail.com
+#+OPTIONS: toc:3 num:nil ^:nil
+#+STARTUP: showall
+#+STARTUP: indent
+#+STARTUP: hidestars
+
+* La configuración
+
+**   Fuente de paquetes para emacs
+
+#+BEGIN_SRC emacs-lisp
+  (setf package-archives (list '("gnu" . "http://elpa.gnu.org/packages/")
+                                 '("marmalade" . "http://marmalade-repo.org/packages/")
+                                 '("melpa" . "http://melpa.milkbox.net/packages/")
+                                 '("org" . "http://orgmode.org/elpa/")))(setf package-archives (list '("gnu" . "http://elpa.gnu.org/packages/
+  ")
+                               '))
+#+END_SRC
+
+** Sane defaults
+
+#+BEGIN_SRC emacs-lisp
+  (powerline-center-theme)
+  ;; Elimina elementos de la interfaz. descomentelo cuando se sienta bien hacker
+  ;;(menu-bar-mode -1)
+  ;;(tool-bar-mode -1)
+  ;;(scroll-bar-mode -1)
+  ;;(tooltip-mode -1)
+  (recentf-mode 1)
+  (savehist-mode 1)
+  ;; Establece la tipografia que Emacs debe usar. La tipografia debe estar
+  ;; instala en su sistema. Yo uso Source Code Pro porque es una tipografia muy
+  ;; buena para programación.
+  ;;(set-frame-font "SourceCodePro 11")
+  ;;(add-to-list (quote default-frame-alist) (quote (font . "SourceCodePro-11")))
+  (fset 'yes-or-no-p 'y-or-n-p)
+  (global-auto-revert-mode 1)
+  (column-number-mode 1)
+  (global-subword-mode 1)
+  (show-paren-mode t)
+  (delete-selection-mode 1)
+
+  (setf
+   bookmark-default-file (expand-file-name "bookmarks" user-emacs-directory)
+   bookmark-save-flag 1
+   inhibit-startup-message t
+   initial-scratch-message nil
+   line-spacing 1
+   make-backup-files nil
+   global-auto-revert-non-file-buffers t
+   auto-revert-verbose nil
+   echo-keystrokes 0.1
+   shift-select-mode nil
+   byte-compile-warnings '(not nresolved
+                             free-vars
+                             callargs
+                             redefine
+                             obsolete
+                             noruntime
+                             cl-functions
+                             interactive-only)
+   fill-column 80
+   blink-matching-paren nil
+   uniquify-buffer-name-style (quote forward)
+   recentf-max-saved-items 100
+   history-length 1000
+   x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING)
+   enable-recursive-minibuffers t
+   gc-cons-percentage 0.125
+   ediff-diff-options "-w"
+   ediff-split-window-function 'split-window-horizontally
+   ediff-window-setup-function 'ediff-setup-windows-plain
+   custom-file (expand-file-name "custom.el" user-emacs-directory)
+   flyspell-issue-message-flag nil
+   )
+
+  (set-default 'indent-tabs-mode nil)
+  (set-default 'indicate-empty-lines t)
+  (setq-default truncate-lines t)
+
+  (prefer-coding-system 'utf-8)
+  (set-default-coding-systems 'utf-8)
+  (set-terminal-coding-system 'utf-8)
+  (set-keyboard-coding-system 'utf-8)
+
+  (if
+      (boundp 'buffer-file-coding-system)
+      (setq-default buffer-file-coding-system 'utf-8)
+    (setf default-buffer-file-coding-system 'utf-8))
+
+  (load custom-file)
+
+#+END_SRC
+
+
+
+** modos de Emacs
+*** after-init
+#+BEGIN_SRC emacs-lisp
+  (add-hook 'after-init-hook (lambda ()
+                               (helm-mode 1)
+                               (helm-descbinds-mode)
+                               (global-flycheck-mode)
+                               (autopair-global-mode)
+                               (global-pretty-mode t)
+                               (global-company-mode)
+                               )
+            )
+
+  ;; establecemos combinaciones de teclas a nivel global para accesar a algunos
+  ;; comandos extendidos desde el teclado. Si alguna combinacion no es de tu
+  ;; agrado, cambiala. Asegurate de que la combinacion de teclas que deseas usar
+  ;; no este ya ocupada, eso lo puedes comprobar presionando la combinación de
+  ;; teclas, si en el area de eco aparece la combinación seguido de `is
+  ;; undefined` entonces la puedes usar.
+
+  ;; el comando undo hace lo mismo que en cualquier programa hace CTRL+z yo he
+  ;; escojido la combinacion C-ç debido a que uso emacs mayor mente en una
+  ;; portatil, y ademas que la combinación C-z ya esta ocupada.
+  (global-set-key (kbd "C-ç") 'undo)
+
+  ;; Mover el cursor entre ventanas es mas facil si haces M-o en lugar de C-x o.
+  (global-set-key (kbd "M-o") 'other-window)
+
+  ;; La siguiente combinacion sirve para dividir una ventana a la mitad, ya sea
+  ;; horizontal o verticalmente, sin embargo acá le hacemos un hackeo para que
+  ;; ademas de dividir la ventana, mueva el cursor a la ventana recien creada
+  (global-set-key (kbd "C-x 2") (lambda ()
+                                  (interactive)
+                                  (split-window-vertically)
+                                  (other-window 1)))
+
+  (global-set-key (kbd "C-x 3") (lambda ()
+                                  (interactive)
+                                  (split-window-horizontally)
+                                  (other-window 1)))
+
+  ;; Al usar la siguiente combinación de teclas, un buffer listando las
+  ;; combinaciones de teclas disponibles se abrira. Util si has olvidado alguna
+  ;; combinación en particular
+  (global-set-key (kbd "C-h C-m") 'discover-my-major)
+
+#+END_SRC
+
+
+*** text-mode
+#+BEGIN_SRC emacs-lisp
+  (add-hook 'prog-mode-hook (lambda ()
+                              ;; Estas variables seran locales al buffer donde el
+                              ;; gancho sea activado.
+                              (set (make-local-variable 'fill-column) 79)
+                              ;; Esta variable local le indica a Emacs que los
+                              ;; comentarios que hagamos pongamos en nuestro
+                              ;; codigo fuente de cualquier modo mayor de
+                              ;; programación se rompa al llegar a la columna
+                              ;; 79. Basicamente tu solo te preocupas de escribir
+                              ;; el comentario y Emacs te lo acomodara para que
+                              ;; quede bonito ;)
+                              (set (make-local-variable 'comment-auto-fill-only-comments) t)
+                              (auto-fill-mode t)
+                              (toggle-truncate-lines)
+                              (highlight-numbers-mode)
+                              (hes-mode)
+                              (highlight-blocks-mode)
+                              (hlinum-activate)
+                              (hlinum-highlight-current-line)
+  ))
+
+  ;; redefinimos la tecla RET para que se comporte de otra manera en los modos de
+  ;; programación.
+  (define-key prog-mode-map (kbd "RET") 'newline-and-indent)
+
+  (add-hook 'text-mode-hook (lambda ()
+                              ;; la columan limite para los modos que llamen al
+                              ;; gancho text-mode-hook pueden ser un poco más
+                              ;; largos. 79 es poco.
+                              (set (make-local-variable 'fill-column) 110)
+                              (auto-fill-mode)
+                              ;; tienes que tener instalado ispell instalado en
+                              ;; tu sistema sino éste modo menor te causara
+                              ;; problemas, comentaló y reinicia emacs si es así
+                              (flyspell-mode)
+                              ;; flyspell lo que hace es revisar tu
+                              ;; ortografia. Lo puedes activar también para que
+                              ;; revise la ortografia de cadenas y comentarios en
+                              ;; los modos mayores para programación con
+                              ;; (flyspell-prog-mode) en el gancho prog-mode-hook
+  ))
+
+#+END_SRC
+
